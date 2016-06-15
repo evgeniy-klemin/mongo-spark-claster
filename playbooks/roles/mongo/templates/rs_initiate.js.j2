@@ -1,0 +1,13 @@
+rs.initiate();
+sleep(13000);
+cfg = rs.conf();
+cfg.members[0].host = "{{ ansible_eth1.ipv4.address }}:27017";
+rs.reconfig(cfg, {force: true});
+sleep(8000);
+{% for host in groups[rs] %}
+{% if not ansible_hostname == hostvars[host].ansible_hostname %}
+rs.add("{{ hostvars[host].ansible_eth1.ipv4.address }}:27017");
+sleep(8000);
+{% endif %}
+{% endfor %}
+printjson(rs.status());

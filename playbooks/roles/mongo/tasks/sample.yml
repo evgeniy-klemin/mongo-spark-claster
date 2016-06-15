@@ -1,0 +1,17 @@
+# vim:ft=ansible
+---
+
+- name: Check if data exists
+  command: test -f /etc/mongodb/primer-dataset.json
+  register: dataexists
+  ignore_errors: True
+  when: is_master|default("no") == "yes"
+
+- name: Download sample file
+  command: wget -O /etc/mongodb/primer-dataset.json https://raw.githubusercontent.com/mongodb/docs-assets/primer-dataset/primer-dataset.json
+  ignore_errors: True
+  when: dataexists|failed and is_master|default("no") == "yes"
+
+- name: Import data
+  shell: "docker exec -i mongod mongoimport --host {{ ansible_eth1.ipv4.address }}:27017 --username siteRootAdmin --password 123456 --authenticationDatabase admin --db test --collection restaurants --drop --file /etc/mongodb/primer-dataset.json"
+  when: dataexists|failed and is_master|default("no") == "yes"

@@ -1,0 +1,57 @@
+# vim:ft=ansible
+---
+
+
+- name: configure docker logs
+  template: src=default_docker.j2 dest=/etc/default/docker mode=755
+
+- name: Upgrade all packages Debian
+  apt: upgrade=dist
+  ignore_errors: True
+  when: ansible_os_family == 'Debian'
+
+- name: Install kernel
+  apt:
+    name: "linux-image-extra-{{ansible_kernel}}"
+    state: present
+    update_cache: yes
+  when: ansible_os_family == 'Debian'
+
+- name: Debian | Add Docker repository key
+  apt_key:
+    id: "2C52609D"
+    url: "https://apt.dockerproject.org/gpg"
+    state: present
+  register: add_repository_key
+  ignore_errors: true
+  when: ansible_os_family == 'Debian'
+
+- name: Debian | Alternative | Add Docker repository key
+  shell: curl -sSL https://get.docker.com/gpg | sudo apt-key add -
+  when: ansible_os_family == 'Debian' and add_repository_key|failed
+
+- name: Debian | Add Docker repository and update apt cache
+  apt_repository:
+    repo: "deb https://apt.dockerproject.org/repo ubuntu-{{ ansible_distribution_release }} main"
+    update_cache: yes
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Debian | Install docker package
+  apt:
+    name: "docker-engine"
+    state: "present"
+    update_cache: yes
+    cache_valid_time: 600
+  when: ansible_os_family == 'Debian'
+
+- name: Add docker group
+  group: name=docker system=yes
+
+- name: Adding users in docker group
+  user: name={{ item.user }} groups=docker append=yes
+  with_items:
+    - '{{ ssh_users }}'
+
+- name: Start docker
+  service: name=docker state=started enabled=yes

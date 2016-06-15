@@ -1,0 +1,111 @@
+# vim:ft=ansible
+---
+
+
+# reset
+#- command: rm -rf /usr/local/configured
+#  ignore_errors: True
+
+#- command: docker rm -f mongod
+#  ignore_errors: True
+
+#- command: docker rm -f mongod-tmp
+#  ignore_errors: True
+
+#- command: rm -rf /data/db
+#  ignore_errors: True
+
+
+- name: Create the mongod user
+  user: name=mongod comment="MongoD"
+
+- name: Create directory /etc/mongodb
+  file: path=/etc/mongodb state=directory mode=0755
+
+- name: Create directory /data/db
+  file: path=/data/db state=directory owner=999 group=999 mode=0755
+
+- name: Copy keyfile
+  copy: src=mongodb-keyfile dest=/etc/mongodb/mongodb-keyfile owner=999 group=999 mode=0400
+
+
+- name: Install docker-py, pymongo
+  pip: name={{ item }}
+  with_items:
+    - docker-py
+    - pymongo
+
+- name: Check if node configured
+  command: test -f /usr/local/configured
+  register: configured
+  ignore_errors: True
+
+- name: Create the file to initialize the mongod replica set
+  template: src=rs_initiate.js.j2 dest=/usr/local/sbin/rs_initiate.js
+  when: configured|failed and is_master|default("no") == "yes"
+
+- name: Run mongod unsafe
+  docker:
+    name: mongod-tmp
+    image: mongo:3.0
+    command: --replSet "{{ rs }}" --smallfiles --port 27017 --bind_ip 0.0.0.0
+    state: started
+    net: host
+    volumes:
+    - /data/db:/data/db
+    - /usr/local/sbin:/usr/local/sbin
+  when: configured|failed
+
+- name: Pause for a while
+  pause: seconds=20
+
+- name: Initialize the replication set
+  shell: docker exec -i mongod-tmp mongo localhost:27017/admin /usr/local/sbin/rs_initiate.js
+  when: configured|failed and is_master|default("no") == "yes"
+
+- name: Pause for a while
+  pause: seconds=20
+
+- name: Create mongo user siteRootAdmin
+  mongodb_user: database=admin name=siteRootAdmin password={{ mongo_root_password }} roles='root' state=present
+  when: configured|failed and is_master|default("no") == "yes"
+
+- name: Stop unsafe mongo
+  shell: docker stop mongod-tmp
+  when: configured|failed
+
+- name: Mark node as configured
+  file: path=/usr/local/configured state=touch mode=0644
+  when: configured|failed
+
+- name: Run mongod
+  docker:
+    name: mongod
+    image: mongo:3.0
+    command: --replSet "{{ rs }}" --smallfiles --port 27017 --bind_ip {{ ansible_eth1.ipv4.address }} --keyFile /etc/mongodb/mongodb-keyfile
+    state: started
+    restart_policy: always
+    net: host
+    volumes:
+    - /data/db:/data/db
+    - /etc/mongodb:/etc/mongodb
+
+- name: Pause for a while
+  pause: seconds=20
+
+- name: Create mongo user spark
+  mongodb_user:
+    login_user: siteRootAdmin
+    login_password: "{{ mongo_root_password }}"
+    login_host: "{{ ansible_eth1.ipv4.address }}"
+    database: test
+    name: spark
+    password: spark
+    roles:
+    - { db: "test" , role: "readWrite" }
+    - { db: "admin", role : "clusterManager" }
+    state: present
+  when: is_master|default("no") == "yes"
+
+- include: sample.yml
+- include: express.yml

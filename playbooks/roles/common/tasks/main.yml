@@ -1,0 +1,24 @@
+---
+# Common roles for all hosts
+
+- name: Sets hostname
+  hostname: 
+    name: '{{ hostname }}'
+  when: hostname is defined
+
+
+- name: Add hostname in /etc/hosts
+  lineinfile: 
+    dest: '/etc/hosts'
+    regexp: '^127.0.0.1'
+    line: '127.0.0.1 localhost {{ hostname }}'
+  when: hostname is defined
+
+
+- name: Installs the necessary software Debian
+  apt: 
+    name: '{{ item }}'
+    update_cache: yes
+    cache_valid_time: 3600
+  with_items: defaultapps
+  when: ansible_os_family == 'Debian'

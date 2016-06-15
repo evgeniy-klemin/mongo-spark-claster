@@ -1,0 +1,14 @@
+# vim:ft=ansible
+---
+
+
+- hosts: all
+  gather_facts: yes
+  roles:
+    - { role: 'common', tags: ['common'], become: yes }
+    - { role: 'docker', tags: ['docker'], become: yes }
+
+- hosts: mongo
+  gather_facts: yes
+  roles:
+    - { role: 'mongo', tags: ['mongo'], become: yes }

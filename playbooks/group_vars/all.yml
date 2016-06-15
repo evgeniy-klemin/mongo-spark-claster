@@ -1,0 +1,11 @@
+ssh_users:
+  - user: vagrant
+mongo_root_password: 123456
+defaultapps:
+    - sudo
+    - htop
+    - mc
+    - git
+    - python-pip
+    - vim
+    - tree
