@@ -29,14 +29,14 @@ Spark shell
 
 Run container with shell in vagrant `vagrant ssh ubuntu-03` (slave mongo instance)
 
-```
+```bash
 docker run --rm -it -p 8088:8088 -p 8042:8042 -h localhost --net host evgeniyklemin/spark-mongodb bash
 ```
 
 
 Run pyspark into slave mongo container
 
-```
+```bash
 pyspark --jars ${SPARK_HOME}/mongo-java-driver-${MONGO_JAVA_VERSION}.jar,${SPARK_HOME}/mongo-hadoop-spark-${MONGO_HADOOP_VERSION}.jar \
 --driver-class-path ${SPARK_HOME}/mongo-hadoop-spark-${MONGO_HADOOP_VERSION}.jar \
 --py-files ${SPARK_HOME}/mongo-hadoop/spark/src/main/python/pymongo_spark.py,${SPARK_HOME}/mongo-hadoop/spark/src/main/python/dist/pymongo_spark-0.1.dev0-py2.6.egg
@@ -45,7 +45,7 @@ pyspark --jars ${SPARK_HOME}/mongo-java-driver-${MONGO_JAVA_VERSION}.jar,${SPARK
 
 Example
 
-```
+```python
 import pprint
 import pymongo_spark
 pymongo_spark.activate()
