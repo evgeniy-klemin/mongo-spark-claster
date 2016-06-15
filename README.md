@@ -2,7 +2,7 @@ Mongo spark claster
 ===================
 
 Test bed.
-Hadoop spark with mongodb data provider.
+Spark claster with mongo hadoop connector.
 
 
 Roadmap
@@ -43,7 +43,7 @@ pyspark --jars ${SPARK_HOME}/mongo-java-driver-${MONGO_JAVA_VERSION}.jar,${SPARK
 ```
 
 
-Example
+**Python example**
 
 ```python
 import pprint
