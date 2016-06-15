@@ -17,6 +17,7 @@ Roadmap
 
 
 Run
+---
 
 ```
 vagrant up
@@ -45,19 +46,22 @@ pyspark --jars ${SPARK_HOME}/mongo-java-driver-${MONGO_JAVA_VERSION}.jar,${SPARK
 Example
 
 ```
-log4j = sc._jvm.org.apache.log4j
-log4j.LogManager.getRootLogger().setLevel(log4j.Level.ERROR)
-
 import pprint
 import pymongo_spark
 pymongo_spark.activate()
 
-mongo_rdd = sc.mongoRDD('mongodb://spark:spark@172.17.8.100:27017/test.restaurants', {
+# Disable huge logging
+log4j = sc._jvm.org.apache.log4j
+log4j.LogManager.getRootLogger().setLevel(log4j.Level.ERROR)
+
+mongo_rdd_config = {
     'mongo.input.query': '{"borough": "Bronx"}',
     'mongo.input.fields': '{"borough": 1, "grades": 1}',
     'mongo.input.split.use_range_queries': 'true',
     'mongo.job.verbose': 'false'
-})
+}
+
+mongo_rdd = sc.mongoRDD('mongodb://spark:spark@172.17.8.102:27017/test.restaurants', mongo_rdd_config)
 mongo_rdd.cache()
 
 pprint.pprint(mongo_rdd.first())
